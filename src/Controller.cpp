@@ -290,7 +290,7 @@ void Controller::addGUIElements(std::shared_ptr<mc_rtc::gui::StateBuilder> gui)
                         [this]() { return this->robot().surfaceWrench("RightFootCenter"); },
                         [this]() { return sva::PTransformd(this->robot().copW("RightFootCenter")); }));
 
-  gui->addElement({"Walking", "Main"},
+  gui->addElement({},
                   Button("# EMERGENCY STOP",
                          [this]() {
                            mc_rtc::log::error("EMERGENCY STOP!");
@@ -460,7 +460,7 @@ void Controller::pauseWalkingCallback(bool verbose)
     {
       mc_rtc::log::warning("Cannot pause on uneven ground, will pause later");
     }
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
+    gui()->removeElement({}, "Pause walking");
     pauseWalkingRequested = true;
   }
   else if(pauseWalkingRequested)
@@ -471,7 +471,7 @@ void Controller::pauseWalkingCallback(bool verbose)
   }
   else // (!pauseWalkingRequested)
   {
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
+    gui()->removeElement({}, "Pause walking");
     pauseWalking = true;
   }
 }

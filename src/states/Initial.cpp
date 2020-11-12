@@ -45,7 +45,7 @@ void states::Initial::start()
 
   if(gui())
   {
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
+    gui()->removeElement({}, "Pause walking");
   }
 
   runState(); // don't wait till next cycle to update reference and tasks
@@ -96,7 +96,7 @@ void states::Initial::showStartStandingButton()
   if(!startStandingButton_ && gui())
   {
     using namespace mc_rtc::gui;
-    gui()->addElement({"Walking", "Main"}, Button("Start standing", [this]() { startStanding_ = true; }));
+    gui()->addElement({}, Button("Start standing", [this]() { startStanding_ = true; }));
     startStandingButton_ = true;
   }
 }
@@ -105,7 +105,7 @@ void states::Initial::hideStartStandingButton()
 {
   if(startStandingButton_ && gui())
   {
-    gui()->removeElement({"Walking", "Main"}, "Start standing");
+    gui()->removeElement({}, "Start standing");
     startStandingButton_ = false;
   }
 }

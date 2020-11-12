@@ -117,12 +117,12 @@ void states::Standing::start()
   if(gui())
   {
     using namespace mc_rtc::gui;
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
-    gui()->addElement({"Walking", "Main"}, ComboInput("Footstep plan", ctl.planInterpolator.availablePlans(),
-                                                      [&ctl]() { return ctl.plan.name; },
-                                                      [this](const std::string & name) { updatePlan(name); }));
-    gui()->addElement({"Walking", "Main"}, Button((supportContact.id == 0) ? "Start walking" : "Resume walking",
-                                                  [this]() { startWalking(); }));
+    gui()->removeElement({}, "Pause walking");
+    gui()->addElement({}, ComboInput("Footstep plan", ctl.planInterpolator.availablePlans(),
+                                     [&ctl]() { return ctl.plan.name; },
+                                     [this](const std::string & name) { updatePlan(name); }));
+    gui()->addElement(
+        {}, Button((supportContact.id == 0) ? "Start walking" : "Resume walking", [this]() { startWalking(); }));
     gui()->addElement({"Standing"},
                       NumberInput("CoM target [0-1]", [this]() { return std::round(leftFootRatio_ * 10.) / 10.; },
                                   [this](double leftFootRatio) { updateTarget(leftFootRatio); }),
@@ -163,11 +163,9 @@ void states::Standing::teardown()
   if(gui())
   {
     gui()->removeCategory({"Standing"});
-    gui()->removeElement({"Walking", "Main"}, "Footstep plan");
-    gui()->removeElement({"Walking", "Main"}, "Gait");
-    gui()->removeElement({"Walking", "Main"}, "Go to middle");
-    gui()->removeElement({"Walking", "Main"}, "Resume walking");
-    gui()->removeElement({"Walking", "Main"}, "Start walking");
+    gui()->removeElement({}, "Footstep plan");
+    gui()->removeElement({}, "Resume walking");
+    gui()->removeElement({}, "Start walking");
   }
 }
 
@@ -233,9 +231,9 @@ void states::Standing::checkPlanUpdates()
   {
     if(gui())
     {
-      gui()->removeElement({"Walking", "Main"}, "Resume walking");
-      gui()->removeElement({"Walking", "Main"}, "Start walking");
-      gui()->addElement({"Walking", "Main"}, mc_rtc::gui::Button("Start walking", [this]() { startWalking(); }));
+      gui()->removeElement({}, "Resume walking");
+      gui()->removeElement({}, "Start walking");
+      gui()->addElement({}, mc_rtc::gui::Button("Start walking", [this]() { startWalking(); }));
     }
     planChanged_ = false;
   }
@@ -353,7 +351,7 @@ void states::Standing::startWalking()
     return;
   }
   startWalking_ = true;
-  gui()->addElement({"Walking", "Main"},
+  gui()->addElement({},
                     mc_rtc::gui::Button("Pause walking", [&ctl]() { ctl.pauseWalkingCallback(/* verbose = */ true); }));
 }
 
