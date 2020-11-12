@@ -24,16 +24,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 set(CONTROLLER_SRC
-    Controller.cpp
-    FloatingBaseObserver.cpp
-    FootstepPlan.cpp
-    ModelPredictiveControl.cpp
-    NetWrenchObserver.cpp
-    Pendulum.cpp
-    PlanInterpolator.cpp
-    Preview.cpp
-    Stabilizer.cpp
-    SwingFoot.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/FloatingBaseObserver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/FootstepPlan.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ModelPredictiveControl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/NetWrenchObserver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Pendulum.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/PlanInterpolator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Preview.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Stabilizer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SwingFoot.cpp)
 
 set(CONTROLLER_HDR
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/lipm_walking/Contact.h
@@ -58,16 +58,22 @@ set(CONTROLLER_HDR
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/lipm_walking/utils/slerp.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/lipm_walking/utils/world.h)
 
-add_library(${PROJECT_NAME} SHARED ${CONTROLLER_SRC} ${CONTROLLER_HDR})
-target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
-target_link_libraries(${PROJECT_NAME} PUBLIC copra::copra eigen-quadprog::eigen-quadprog mc_rtc::mc_control_fsm)
-install(TARGETS ${PROJECT_NAME} DESTINATION "${MC_RTC_LIBDIR}")
+if(NOT MC_RTC_BUILD_STATIC)
+  add_library(${PROJECT_NAME} SHARED ${CONTROLLER_SRC} ${CONTROLLER_HDR})
+  target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+  target_link_libraries(${PROJECT_NAME} PUBLIC copra::copra eigen-quadprog::eigen-quadprog mc_rtc::mc_control_fsm)
+  install(TARGETS ${PROJECT_NAME} DESTINATION "${MC_RTC_LIBDIR}")
 
-add_controller(${PROJECT_NAME}_controller lib.cpp "")
-set_target_properties(${PROJECT_NAME}_controller PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
-target_link_libraries(${PROJECT_NAME}_controller PUBLIC ${PROJECT_NAME})
+  add_controller(${PROJECT_NAME}_controller lib.cpp "")
+  set_target_properties(${PROJECT_NAME}_controller PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
+  target_link_libraries(${PROJECT_NAME}_controller PUBLIC ${PROJECT_NAME})
+else()
+  add_fsm_controller(${PROJECT_NAME} "${CONTROLLER_SRC}" "${CONTROLLER_HDR}")
+  target_compile_features(mc_control_fsm PUBLIC cxx_std_14)
+  target_include_directories(mc_control_fsm PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+  target_link_libraries(mc_control_fsm PUBLIC copra::copra eigen-quadprog::eigen-quadprog)
+endif()
 
-set(AROBASE "@")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../etc/LIPMWalking.in.yaml" "${CMAKE_CURRENT_BINARY_DIR}/etc/LIPMWalking.yaml")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/etc/LIPMWalking.yaml" DESTINATION "${MC_RTC_LIBDIR}/mc_controller/etc/")
 

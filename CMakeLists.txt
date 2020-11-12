@@ -33,14 +33,25 @@ set(PROJECT_DESCRIPTION "Walking controller based on linear inverted pendulum tr
 set(PROJECT_URL https://github.com/stephane-caron/lipm_walking_controller/)
 set(PROJECT_VERSION 1.6.0)
 
-include(cmake/base.cmake)
+if(NOT TARGET mc_rtc::mc_control)
+  include(cmake/base.cmake)
+endif()
 set(CXX_DISABLE_WERROR True)
 
 project(${PROJECT_NAME} CXX)
 
-find_package(copra REQUIRED)
-find_package(mc_rtc REQUIRED)
-find_package(eigen-quadprog REQUIRED)
+if(NOT TARGET mc_rtc::mc_control)
+  find_package(mc_rtc REQUIRED)
+  find_package(copra REQUIRED)
+else()
+  add_project_dependency(copra REQUIRED)
+  if(MC_RTC_BUILD_STATIC)
+    # We set properties on mc_control_fsm and this requires CMake 3.13
+    # See https://gitlab.kitware.com/cmake/cmake/-/merge_requests/2370
+    cmake_minimum_required(VERSION 3.13)
+  endif()
+endif()
+
 
 if(EXISTS "${MC_RTC_LIBDIR}/mc_controller/etc/LIPMWalking.conf")
   message(FATAL_ERROR "\n \
