@@ -1072,7 +1072,6 @@ plans:
             translation: [0.035, 0.105, 0.0]
           surface: LeftFootCenter
 constraints:
-  - type: contact
   # KinematicsConstraint, i.e. joint limits see equation (3.6) in Joris Vaillant's thesis
   #  interaction distance (d_i) safety distance (d_s) damper offset (xi_off)
   #  applies to main robot

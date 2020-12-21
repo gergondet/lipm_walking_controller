@@ -33,7 +33,7 @@
 #include <mc_planning/Pendulum.h>
 #include <mc_rtc/logging.h>
 #include <mc_tasks/lipm_stabilizer/StabilizerTask.h>
-#include <mc_tasks/SurfaceTransformTask.h>
+#include <mc_tasks/TransformTask.h>
 
 #include <lipm_walking/Contact.h>
 #include <lipm_walking/FootstepPlan.h>
@@ -313,8 +313,10 @@ public: /* visible to FSM states */
   std::vector<std::vector<double>>
       halfSitPose; /**< Half-sit joint-angle configuration stored when the controller starts. */
 
-  std::shared_ptr<mc_tasks::SurfaceTransformTask> swingFootTaskLeft_;
-  std::shared_ptr<mc_tasks::SurfaceTransformTask> swingFootTaskRight_;
+  std::shared_ptr<mc_tasks::TransformTask> swingFootTaskLeft_;
+  std::shared_ptr<mc_tasks::TransformTask> swingFootTaskRight_;
+
+  using mc_control::fsm::Controller::postureTask_;
 
 private: /* hidden from FSM states */
   std::shared_ptr<mc_tasks::lipm_stabilizer::StabilizerTask> stabilizer_;

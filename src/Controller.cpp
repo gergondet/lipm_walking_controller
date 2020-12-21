@@ -67,13 +67,13 @@ Controller::Controller(std::shared_ptr<mc_rbdyn::RobotModule> robotModule,
 
   double postureStiffness = config("tasks")("posture")("stiffness");
   double postureWeight = config("tasks")("posture")("weight");
-  postureTask = getPostureTask(robot().name());
-  postureTask->stiffness(postureStiffness);
-  postureTask->weight(postureWeight);
+  postureTask_ = getPostureTask(robot().name());
+  postureTask_->stiffness(postureStiffness);
+  postureTask_->weight(postureWeight);
 
   // Set half-sitting pose for posture task
   const auto & halfSit = robotModule->stance();
-  const auto & refJointOrder = robot().refJointOrder();
+  const auto & refJointOrder = robot().module().ref_joint_order();
   for(unsigned i = 0; i < refJointOrder.size(); ++i)
   {
     if(robot().hasJoint(refJointOrder[i]))
@@ -83,9 +83,9 @@ Controller::Controller(std::shared_ptr<mc_rbdyn::RobotModule> robotModule,
   }
 
   // Read sole properties from robot model and configuration file
-  sva::PTransformd X_0_lfc = controlRobot().surfacePose("LeftFootCenter");
-  sva::PTransformd X_0_rfc = controlRobot().surfacePose("RightFootCenter");
-  sva::PTransformd X_0_lf = controlRobot().surfacePose("LeftFoot");
+  const auto & X_0_lfc = controlRobot().frame("LeftFootCenter").position();
+  const auto & X_0_rfc = controlRobot().frame("RightFootCenter").position();
+  const auto & X_0_lf = controlRobot().frame("LeftFoot").position();
   sva::PTransformd X_lfc_lf = X_0_lf * X_0_lfc.inv();
   sva::PTransformd X_rfc_lfc = X_0_lfc * X_0_rfc.inv();
   double stepWidth = X_rfc_lfc.translation().y();
@@ -113,9 +113,8 @@ Controller::Controller(std::shared_ptr<mc_rbdyn::RobotModule> robotModule,
   // clang-format off
   stabilizer_.reset(
     new mc_tasks::lipm_stabilizer::StabilizerTask(
-      solver().robots(),
-      solver().realRobots(),
-      robot().robotIndex(),
+      solver().robots().robot(),
+      solver().realRobots().robot(),
       stabiConfig.leftFootSurface,
       stabiConfig.rightFootSurface,
       stabiConfig.torsoBodyName,
@@ -140,10 +139,8 @@ Controller::Controller(std::shared_ptr<mc_rbdyn::RobotModule> robotModule,
     robotConfig("swingfoot")("weight", swingWeight);
     robotConfig("swingfoot")("stiffness", swingStiffness);
   }
-  swingFootTaskRight_.reset(
-      new mc_tasks::SurfaceTransformTask("RightFootCenter", robots(), robots().robotIndex(), swingWeight, swingStiffness));
-  swingFootTaskLeft_.reset(
-      new mc_tasks::SurfaceTransformTask("LeftFootCenter", robots(), robots().robotIndex(), swingWeight, swingStiffness));
+  swingFootTaskRight_ = std::make_shared<mc_tasks::TransformTask>(robot().frame("RightFootCenter"), swingWeight, swingStiffness);
+  swingFootTaskLeft_ = std::make_shared<mc_tasks::TransformTask>(robot().frame("LeftFootCenter"), swingWeight, swingStiffness);
 
   addLogEntries(logger());
   mpc_.addLogEntries(logger());
@@ -156,7 +153,7 @@ Controller::Controller(std::shared_ptr<mc_rbdyn::RobotModule> robotModule,
 
   // Update observers
   datastore().make_call("KinematicAnchorFrame::" + robot().name(), [this](const mc_rbdyn::Robot & robot) {
-    return sva::interpolate(robot.surfacePose("RightFootCenter"), robot.surfacePose("LeftFootCenter"), leftFootRatio_);
+    return sva::interpolate(robot.frame("RightFootCenter").position(), robot.frame("LeftFootCenter").position(), leftFootRatio_);
   });
 
   mc_rtc::log::success("LIPMWalking controller init done.");
@@ -164,11 +161,11 @@ Controller::Controller(std::shared_ptr<mc_rbdyn::RobotModule> robotModule,
 
 void Controller::addLogEntries(mc_rtc::Logger & logger)
 {
-  logger.addLogEntry("controlRobot_LeftFoot", [this]() { return controlRobot().surfacePose("LeftFoot"); });
-  logger.addLogEntry("controlRobot_LeftFootCenter", [this]() { return controlRobot().surfacePose("LeftFootCenter"); });
-  logger.addLogEntry("controlRobot_RightFoot", [this]() { return controlRobot().surfacePose("RightFoot"); });
+  logger.addLogEntry("controlRobot_LeftFoot", [this]() { return controlRobot().frame("LeftFoot").position(); });
+  logger.addLogEntry("controlRobot_LeftFootCenter", [this]() { return controlRobot().frame("LeftFootCenter").position(); });
+  logger.addLogEntry("controlRobot_RightFoot", [this]() { return controlRobot().frame("RightFoot").position(); });
   logger.addLogEntry("controlRobot_RightFootCenter",
-                     [this]() { return controlRobot().surfacePose("RightFootCenter"); });
+                     [this]() { return controlRobot().frame("RightFootCenter").position(); });
   logger.addLogEntry("mpc_failures", [this]() { return nbMPCFailures_; });
   logger.addLogEntry("left_foot_ratio", [this]() { return leftFootRatio_; });
   logger.addLogEntry("left_foot_ratio_measured", [this]() { return measuredLeftFootRatio(); });
@@ -184,10 +181,10 @@ void Controller::addLogEntries(mc_rtc::Logger & logger)
   logger.addLogEntry("plan_takeoff_duration", [this]() { return plan.takeoffDuration(); });
   logger.addLogEntry("plan_takeoff_offset", [this]() { return plan.takeoffOffset(); });
   logger.addLogEntry("plan_takeoff_pitch", [this]() { return plan.takeoffPitch(); });
-  logger.addLogEntry("realRobot_LeftFoot", [this]() { return realRobot().surfacePose("LeftFoot"); });
-  logger.addLogEntry("realRobot_LeftFootCenter", [this]() { return realRobot().surfacePose("LeftFootCenter"); });
-  logger.addLogEntry("realRobot_RightFoot", [this]() { return realRobot().surfacePose("RightFoot"); });
-  logger.addLogEntry("realRobot_RightFootCenter", [this]() { return realRobot().surfacePose("RightFootCenter"); });
+  logger.addLogEntry("realRobot_LeftFoot", [this]() { return realRobot().frame("LeftFoot").position(); });
+  logger.addLogEntry("realRobot_LeftFootCenter", [this]() { return realRobot().frame("LeftFootCenter").position(); });
+  logger.addLogEntry("realRobot_RightFoot", [this]() { return realRobot().frame("RightFoot").position(); });
+  logger.addLogEntry("realRobot_RightFootCenter", [this]() { return realRobot().frame("RightFootCenter").position(); });
   logger.addLogEntry("realRobot_posW", [this]() { return realRobot().posW(); });
 }
 
@@ -354,7 +351,7 @@ void Controller::internalReset()
   loadFootstepPlan(plan.name);
 
   // (3) reset solver tasks
-  postureTask->posture(halfSitPose);
+  postureTask_->posture(halfSitPose);
 
   // (4) reset controller attributes
   leftFootRatioJumped_ = true;
@@ -368,14 +365,14 @@ void Controller::internalReset()
   // or use the robot height above ground instead.
   constexpr double DEFAULT_HEIGHT = 0.8; // [m]
   double lambda = mc_rtc::constants::GRAVITY / DEFAULT_HEIGHT;
-  pendulum_.reset(lambda, controlRobot().com());
+  pendulum_.reset(lambda, controlRobot().com().com());
 
   stopLogSegment();
 }
 
 void Controller::leftFootRatio(double ratio)
 {
-  double maxRatioVar = 1.5 * timeStep / plan.doubleSupportDuration();
+  double maxRatioVar = 1.5 * solver().dt() / plan.doubleSupportDuration();
   if(std::abs(ratio - leftFootRatio_) > maxRatioVar)
   {
     mc_rtc::log::warning("Left foot ratio jumped from {} to {}", leftFootRatio_, ratio);
@@ -399,14 +396,14 @@ bool Controller::run()
     return mc_control::fsm::Controller::run();
   }
 
-  ctlTime_ += timeStep;
+  ctlTime_ += solver().dt();
 
   warnIfRobotIsInTheAir();
 
   bool ret = mc_control::fsm::Controller::run();
   if(mc_control::fsm::Controller::running())
   {
-    postureTask->posture(halfSitPose); // reset posture in case the FSM updated it
+    postureTask_->posture(halfSitPose); // reset posture in case the FSM updated it
   }
   return ret;
 }
@@ -425,7 +422,7 @@ void Controller::pauseWalkingCallback(bool verbose)
     {
       mc_rtc::log::warning("Cannot pause on uneven ground, will pause later");
     }
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
+    gui().removeElement({"Walking", "Main"}, "Pause walking");
     pauseWalkingRequested = true;
   }
   else if(pauseWalkingRequested)
@@ -436,7 +433,7 @@ void Controller::pauseWalkingCallback(bool verbose)
   }
   else // (!pauseWalkingRequested)
   {
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
+    gui().removeElement({"Walking", "Main"}, "Pause walking");
     pauseWalking = true;
   }
 }
@@ -485,8 +482,8 @@ void Controller::loadFootstepPlan(std::string name)
     plan.resetContacts(defaultPlan.contacts());
   }
   plan.complete(sole_);
-  const sva::PTransformd & X_0_lf = controlRobot().surfacePose("LeftFootCenter");
-  const sva::PTransformd & X_0_rf = controlRobot().surfacePose("RightFootCenter");
+  const sva::PTransformd & X_0_lf = controlRobot().frame("LeftFootCenter").position();
+  const sva::PTransformd & X_0_rf = controlRobot().frame("RightFootCenter").position();
   plan.updateInitialTransform(X_0_lf, X_0_rf, initHeight);
   planInterpolator.worldReference(plan.initPose());
   planInterpolator.updateSupportPath(X_0_lf, X_0_rf);

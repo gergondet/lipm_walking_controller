@@ -59,7 +59,7 @@ struct State : mc_control::fsm::State
    * \returns gui GUI handle.
    *
    */
-  std::shared_ptr<mc_rtc::gui::StateBuilder> gui()
+  mc_rtc::gui::StateBuilder & gui()
   {
     return controller_->gui();
   }

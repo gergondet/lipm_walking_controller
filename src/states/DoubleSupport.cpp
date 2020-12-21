@@ -40,10 +40,10 @@ void states::DoubleSupport::start()
 
   duration_ = phaseDuration;
   initLeftFootRatio_ = ctl.leftFootRatio();
-  remTime_ = (phaseDuration > ctl.timeStep) ? phaseDuration : -ctl.timeStep;
+  remTime_ = (phaseDuration > ctl.solver().dt()) ? phaseDuration : -ctl.solver().dt();
   stateTime_ = 0.;
   stopDuringThisDSP_ = ctl.pauseWalking;
-  if(phaseDuration > ctl.timeStep)
+  if(phaseDuration > ctl.solver().dt())
   {
     timeSinceLastPreviewUpdate_ = 2 * PREVIEW_UPDATE_PERIOD; // update at transition...
   }
@@ -53,7 +53,7 @@ void states::DoubleSupport::start()
   }
 
   const std::string & targetSurfaceName = ctl.targetContact().surfaceName;
-  auto actualTargetPose = ctl.controlRobot().surfacePose(targetSurfaceName);
+  auto actualTargetPose = ctl.controlRobot().frame(targetSurfaceName).position();
   ctl.plan.goToNextFootstep(actualTargetPose);
   if(ctl.isLastDSP()) // called after goToNextFootstep
   {
@@ -95,7 +95,7 @@ void states::DoubleSupport::teardown()
 void states::DoubleSupport::runState()
 {
   auto & ctl = controller();
-  double dt = ctl.timeStep;
+  double dt = ctl.solver().dt();
 
   if(remTime_ > 0 && timeSinceLastPreviewUpdate_ > PREVIEW_UPDATE_PERIOD
      && !(stopDuringThisDSP_ && remTime_ < PREVIEW_UPDATE_PERIOD))

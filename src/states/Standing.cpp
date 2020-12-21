@@ -95,45 +95,39 @@ void states::Standing::start()
     }
   }
 
-  if(gui())
-  {
-    using namespace mc_rtc::gui;
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
-    gui()->addElement({"Walking", "Main"}, ComboInput("Footstep plan", ctl.planInterpolator.availablePlans(),
-                                                      [&ctl]() { return ctl.plan.name; },
-                                                      [this](const std::string & name) { updatePlan(name); }));
-    gui()->addElement({"Walking", "Main"}, Button((supportContact.id == 0) ? "Start walking" : "Resume walking",
-                                                  [this]() { startWalking(); }));
-    gui()->addElement({"Standing"},
-                      NumberInput("CoM target [0-1]", [this]() { return std::round(leftFootRatio_ * 10.) / 10.; },
-                                  [this](double leftFootRatio) { updateTarget(leftFootRatio); }),
-                      Label("Left foot force [N]",
-                            [&ctl]() { return ctl.realRobot().forceSensor("LeftFootForceSensor").force().z(); }),
-                      Label("Right foot force [N]",
-                            [&ctl]() { return ctl.realRobot().forceSensor("RightFootForceSensor").force().z(); }),
-                      Button("Go to left foot", [this]() { updateTarget(1.); }),
-                      Button("Go to middle", [this]() { updateTarget(0.5); }),
-                      Button("Go to right foot", [this]() { updateTarget(0.); }));
-  }
+  using namespace mc_rtc::gui;
+  gui().removeElement({"Walking", "Main"}, "Pause walking");
+  gui().addElement({"Walking", "Main"},
+                   ComboInput(
+                       "Footstep plan", ctl.planInterpolator.availablePlans(), [&ctl]() { return ctl.plan.name; },
+                       [this](const std::string & name) { updatePlan(name); }));
+  gui().addElement({"Walking", "Main"},
+                   Button((supportContact.id == 0) ? "Start walking" : "Resume walking", [this]() { startWalking(); }));
+  gui().addElement(
+      {"Standing"},
+      NumberInput(
+          "CoM target [0-1]", [this]() { return std::round(leftFootRatio_ * 10.) / 10.; },
+          [this](double leftFootRatio) { updateTarget(leftFootRatio); }),
+      Label("Left foot force [N]", [&ctl]() { return ctl.realRobot().forceSensor("LeftFootForceSensor").force().z(); }),
+      Label("Right foot force [N]",
+            [&ctl]() { return ctl.realRobot().forceSensor("RightFootForceSensor").force().z(); }),
+      Button("Go to left foot", [this]() { updateTarget(1.); }),
+      Button("Go to middle", [this]() { updateTarget(0.5); }),
+      Button("Go to right foot", [this]() { updateTarget(0.); }));
 
   runState(); // don't wait till next cycle to update reference and tasks
 }
 
 void states::Standing::teardown()
 {
-  auto & ctl = controller();
-
   logger().removeLogEntry("walking_phase");
 
-  if(gui())
-  {
-    gui()->removeCategory({"Standing"});
-    gui()->removeElement({"Walking", "Main"}, "Footstep plan");
-    gui()->removeElement({"Walking", "Main"}, "Gait");
-    gui()->removeElement({"Walking", "Main"}, "Go to middle");
-    gui()->removeElement({"Walking", "Main"}, "Resume walking");
-    gui()->removeElement({"Walking", "Main"}, "Start walking");
-  }
+  gui().removeCategory({"Standing"});
+  gui().removeElement({"Walking", "Main"}, "Footstep plan");
+  gui().removeElement({"Walking", "Main"}, "Gait");
+  gui().removeElement({"Walking", "Main"}, "Go to middle");
+  gui().removeElement({"Walking", "Main"}, "Resume walking");
+  gui().removeElement({"Walking", "Main"}, "Start walking");
 }
 
 void states::Standing::runState()
@@ -155,7 +149,7 @@ void states::Standing::runState()
   double lambda = n.dot(comdd + mc_rtc::constants::gravity) / n.dot(com_i - cop_f);
   Eigen::Vector3d zmp = com_i - (mc_rtc::constants::gravity + comdd) / lambda;
 
-  pendulum.integrateIPM(zmp, lambda, ctl.timeStep);
+  pendulum.integrateIPM(zmp, lambda, ctl.solver().dt());
   ctl.leftFootRatio(leftFootRatio_);
   ctl.stabilizer()->target(pendulum.com(), pendulum.comd(), pendulum.comdd(), pendulum.zmp());
 }
@@ -171,12 +165,9 @@ void states::Standing::checkPlanUpdates()
   }
   if(planChanged_)
   {
-    if(gui())
-    {
-      gui()->removeElement({"Walking", "Main"}, "Resume walking");
-      gui()->removeElement({"Walking", "Main"}, "Start walking");
-      gui()->addElement({"Walking", "Main"}, mc_rtc::gui::Button("Start walking", [this]() { startWalking(); }));
-    }
+    gui().removeElement({"Walking", "Main"}, "Resume walking");
+    gui().removeElement({"Walking", "Main"}, "Start walking");
+    gui().addElement({"Walking", "Main"}, mc_rtc::gui::Button("Start walking", [this]() { startWalking(); }));
     planChanged_ = false;
   }
 }
@@ -226,8 +217,8 @@ void states::Standing::startWalking()
     return;
   }
   startWalking_ = true;
-  gui()->addElement({"Walking", "Main"},
-                    mc_rtc::gui::Button("Pause walking", [&ctl]() { ctl.pauseWalkingCallback(/* verbose = */ true); }));
+  gui().addElement({"Walking", "Main"},
+                   mc_rtc::gui::Button("Pause walking", [&ctl]() { ctl.pauseWalkingCallback(/* verbose = */ true); }));
 }
 
 void states::Standing::updatePlan(const std::string & name)

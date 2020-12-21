@@ -43,10 +43,7 @@ void states::Initial::start()
 
   logger().addLogEntry("walking_phase", []() { return -2.; });
 
-  if(gui())
-  {
-    gui()->removeElement({"Walking", "Main"}, "Pause walking");
-  }
+  gui().removeElement({"Walking", "Main"}, "Pause walking");
 
   runState(); // don't wait till next cycle to update reference and tasks
 }
@@ -55,16 +52,13 @@ void states::Initial::teardown()
 {
   logger().removeLogEntry("walking_phase");
 
-  if(gui())
-  {
-    hideStartStandingButton();
-  }
+  hideStartStandingButton();
 }
 
 void states::Initial::runState()
 {
   auto & ctl = controller();
-  postureTaskIsActive_ = (ctl.postureTask->speed().norm() > 1e-2);
+  postureTaskIsActive_ = (ctl.postureTask_->speed().norm() > 1e-2);
   if(postureTaskIsActive_)
   {
     hideStartStandingButton();
@@ -93,19 +87,19 @@ bool states::Initial::checkTransitions()
 
 void states::Initial::showStartStandingButton()
 {
-  if(!startStandingButton_ && gui())
+  if(!startStandingButton_)
   {
     using namespace mc_rtc::gui;
-    gui()->addElement({"Walking", "Main"}, Button("Start standing", [this]() { startStanding_ = true; }));
+    gui().addElement({"Walking", "Main"}, Button("Start standing", [this]() { startStanding_ = true; }));
     startStandingButton_ = true;
   }
 }
 
 void states::Initial::hideStartStandingButton()
 {
-  if(startStandingButton_ && gui())
+  if(startStandingButton_)
   {
-    gui()->removeElement({"Walking", "Main"}, "Start standing");
+    gui().removeElement({"Walking", "Main"}, "Start standing");
     startStandingButton_ = false;
   }
 }

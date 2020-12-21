@@ -79,7 +79,7 @@ struct PlanInterpolator
    * \param gui GUI handle.
    *
    */
-  PlanInterpolator(std::shared_ptr<mc_rtc::gui::StateBuilder> gui) : gui_(gui) {}
+  PlanInterpolator(mc_rtc::gui::StateBuilder & gui) : gui_(gui) {}
 
   /** Add GUI panel.
    *
@@ -337,7 +337,7 @@ private:
   double stepLength_ = 0.2; /**< Step length in [m] */
   double stepWidth_ = 0.18; // [m], default value is for HRP-4
   mc_rtc::Configuration plans_; /**< Pre-defined footstep plans from configuration file */
-  std::shared_ptr<mc_rtc::gui::StateBuilder> gui_;
+  mc_rtc::gui::StateBuilder & gui_;
   std::vector<Eigen::Vector3d> supportPathDisplay_;
   sva::PTransformd worldReference_;
   unsigned nbFootsteps_ = 0;

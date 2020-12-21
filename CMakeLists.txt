@@ -39,7 +39,7 @@ set(CXX_DISABLE_WERROR True)
 project(${PROJECT_NAME} CXX)
 
 find_package(copra REQUIRED)
-find_package(mc_rtc REQUIRED)
+find_package(mc_rtc 2.0.0 REQUIRED)
 find_package(eigen-quadprog REQUIRED)
 
 if(EXISTS "${MC_RTC_LIBDIR}/mc_controller/etc/LIPMWalking.conf")

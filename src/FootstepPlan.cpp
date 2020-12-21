@@ -163,7 +163,7 @@ sva::PTransformd FootstepPlan::computeInitialTransform(const mc_rbdyn::Robot & r
   sva::PTransformd X_0_c = contacts_[0].pose;
   const std::string & surfaceName = contacts_[0].surfaceName;
   const sva::PTransformd & X_0_fb = robot.posW();
-  sva::PTransformd X_s_0 = robot.surfacePose(surfaceName).inv();
+  sva::PTransformd X_s_0 = robot.frame(surfaceName).position().inv();
   sva::PTransformd X_s_fb = X_0_fb * X_s_0;
   return X_s_fb * X_0_c;
 }

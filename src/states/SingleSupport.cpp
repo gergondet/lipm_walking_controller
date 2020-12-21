@@ -62,7 +62,7 @@ void states::SingleSupport::start()
   swingFoot_.takeoffDuration(ctl.plan.takeoffDuration());
   swingFoot_.takeoffOffset(ctl.plan.takeoffOffset());
   swingFoot_.takeoffPitch(ctl.plan.takeoffPitch());
-  swingFoot_.reset(swingFootTask->surfacePose(), targetContact.pose, duration_, ctl.plan.swingHeight());
+  swingFoot_.reset(swingFootTask->frame().position(), targetContact.pose, duration_, ctl.plan.swingHeight());
 
   logger().addLogEntry("rem_phase_time", [this]() { return remTime_; });
   logger().addLogEntry("walking_phase", []() { return 1.; });
@@ -94,7 +94,7 @@ bool states::SingleSupport::checkTransitions()
 void states::SingleSupport::runState()
 {
   auto & ctl = controller();
-  double dt = ctl.timeStep;
+  double dt = ctl.solver().dt();
 
   updateSwingFoot();
   if(timeSinceLastPreviewUpdate_ > PREVIEW_UPDATE_PERIOD)
@@ -125,7 +125,7 @@ void states::SingleSupport::updateSwingFoot()
   auto & ctl = controller();
   auto & targetContact = ctl.targetContact();
   auto & supportContact = ctl.supportContact();
-  double dt = ctl.timeStep;
+  double dt = ctl.solver().dt();
 
   if(!stabilizer()->inDoubleSupport())
   {
@@ -154,16 +154,16 @@ void states::SingleSupport::updateSwingFoot()
   }
 }
 
-bool states::SingleSupport::detectTouchdown(const std::shared_ptr<mc_tasks::SurfaceTransformTask> footTask,
+bool states::SingleSupport::detectTouchdown(const std::shared_ptr<mc_tasks::TransformTask> footTask,
                                             const sva::PTransformd & contactPose)
 {
-  const sva::PTransformd X_0_s = footTask->surfacePose();
+  const sva::PTransformd X_0_s = footTask->frame().position();
   const sva::PTransformd & X_0_c = contactPose;
   sva::PTransformd X_c_s = X_0_s * X_0_c.inv();
   double xDist = std::abs(X_c_s.translation().x());
   double yDist = std::abs(X_c_s.translation().y());
   double zDist = std::abs(X_c_s.translation().z());
-  double Fz = controller().robot().surfaceWrench(footTask->surface()).force().z();
+  double Fz = footTask->frame().wrench().force().z();
   return (xDist < 0.03 && yDist < 0.03 && zDist < 0.03 && Fz > 50.);
 }
 

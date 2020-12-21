@@ -43,7 +43,7 @@ void PlanInterpolator::addGUIElements()
 {
   using namespace mc_rtc::gui;
 
-  gui_->addElement(
+  gui_.addElement(
       {"Markers", "Footsteps"},
       Trajectory("Support_Path", [this]() -> const std::vector<Eigen::Vector3d> & { return supportPathDisplay_; }),
       XYTheta("World target [m, rad]",
@@ -60,7 +60,7 @@ void PlanInterpolator::addGUIElements()
               },
               [this](const Eigen::VectorXd & desired) { updateWorldTarget_(desired.head<3>()); }));
 
-  gui_->addElement(
+  gui_.addElement(
       {"Walking", "Footsteps"}, Label("Plan name", [this]() { return customPlan_.name; }),
       ComboInput("Gait", {"Walk", "Shuffle", "Turn"}, [this]() { return gait(); },
                  [this](const std::string & dir) { gait(dir); }),
@@ -123,9 +123,9 @@ void PlanInterpolator::addGUIElements()
 
 void PlanInterpolator::removeGUIElements()
 {
-  gui_->removeCategory({"Walking", "Footsteps"});
-  gui_->removeElement({"Markers", "Footsteps"}, "Support_Path");
-  gui_->removeElement({"Markers", "Footsteps"}, "World target [m, rad]");
+  gui_.removeCategory({"Walking", "Footsteps"});
+  gui_.removeElement({"Markers", "Footsteps"}, "Support_Path");
+  gui_.removeElement({"Markers", "Footsteps"}, "World target [m, rad]");
 }
 
 void PlanInterpolator::updateWorldTarget_(const Eigen::Vector3d & desired)
